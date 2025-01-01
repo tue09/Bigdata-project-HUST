@@ -176,29 +176,28 @@ services:
       - hadoop_network
     mem_limit: 512m
 
- 
 
-  # Consumer 2
-  # consumer2:
-  #   build:
-  #     context: ./consumer2
-  #     dockerfile: Dockerfile
-  #   container_name: consumer2
-  #   restart: always
-  #   depends_on:
-  #     - kafka
-  #     - spark-master
-  #     - spark-worker-1
-  #     - mongodb
-  #     - namenode
-  #     - datanode
-  #   environment:
-  #     - KAFKA_BROKER=kafka:9092  
-  #     - MONGO_URI=mongodb://root:password@mongodb:27017
-  #     - HDFS_URL=hdfs://namenode:9000
-  #   networks:
-  #     - hadoop_network
-  #   mem_limit: 512m
+  #Consumer 2
+  consumer2:
+    build:
+      context: ./consumer2
+      dockerfile: Dockerfile
+    container_name: consumer2
+    restart: always
+    depends_on:
+      - kafka
+      - spark-master
+      - spark-worker-1
+      - mongodb
+      - namenode
+      - datanode
+    environment:
+      - KAFKA_BROKER=kafka:9092  
+      - MONGO_URI=mongodb://root:password@mongodb:27017
+      - HDFS_URL=hdfs://namenode:9000
+    networks:
+      - hadoop_network
+    mem_limit: 512m
 
 volumes:
   namenode_data:
