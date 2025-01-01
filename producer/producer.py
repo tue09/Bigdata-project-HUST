@@ -6,20 +6,16 @@ import json
 import time
 from bson.json_util import dumps
 
-# Cấu hình MongoDB
 # MONGO_URI = "mongodb://dsReader:ds_reader_ndFwBkv3LsZYjtUS@178.128.85.210:27017,104.248.148.66:27017,103.253.146.224:27017"
 # MONGO_URI = "mongodb://root:password@mongodb:27017"
 # MONGO_URI = "mongodb://root:password@host.docker.internal:27017"
 MONGO_URI = "mongodb://host.docker.internal:27017"
-# Cấu hình MongoDB
 # MONGO_URI = "mongodb://dsReader:ds_reader_ndFwBkv3LsZYjtUS@host.docker.internal:27017"
-# Cấu hình MongoDB
 # MONGO_URI = f"mongodb://dsReader:ds_reader_ndFwBkv3LsZYjtUS@172.18.0.2.:27017"
 #MONGO_URI = "mongodb://dsReader:ds_reader_ndFwBkv3LsZYjtUS@mongodb:27017"
 MONGO_DB = "cdp_database"  # Thay tên database nếu cần
 MONGO_CLIENT = pymongo.MongoClient(MONGO_URI)
 
-# Cấu hình Kafka từ biến môi trường
 #KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka:29092').split(',')
 # KAFKA_BOOTSTRAP_SERVERS = [os.environ.get('KAFKA_BOOTSTRAP_SERVERS')]  # Thay bằng địa chỉ server của Kafka
 KAFKA_BOOTSTRAP_SERVERS = 'kafka:9092'
@@ -30,7 +26,6 @@ KAFKA_TOPICS = {
 }
 
 def connect_mongodb(db_name):
-    """Connects to MongoDB."""
     try:
         print(f"Attempting to connect to MongoDB at: {MONGO_URI}")  # In ra URI đang sử dụng
         MONGO_CLIENT.admin.command('ping')  # Thử ping server MongoDB
@@ -42,7 +37,6 @@ def connect_mongodb(db_name):
         return None
 
 def initialize_kafka_producer(retries=10, delay=5):
-    """Initializes Kafka producer with retry logic."""
     attempt = 0
     while attempt < retries:
         try:
@@ -60,12 +54,10 @@ def initialize_kafka_producer(retries=10, delay=5):
     return None
 
 def fetch_data_from_mongodb(db, collection_name):
-    """Fetch all data from a MongoDB collection."""
     collection = db[collection_name]
     return collection.find()
 
 def send_message_to_kafka(producer, topic, message):
-    """Sends a message to Kafka."""
     try:
         producer.send(topic, value=message)
         producer.flush()  # Make sure the message is sent
@@ -75,7 +67,6 @@ def send_message_to_kafka(producer, topic, message):
 
 def main():
     print('START Producer')
-    """Main function to collect data from MongoDB and send to Kafka."""
     db = connect_mongodb(MONGO_DB)
     if db is None:
         return
@@ -86,13 +77,12 @@ def main():
 
     collection_names = list(KAFKA_TOPICS.keys())
 
-    # Tạo các cursor cho từng collection
     cursors = {}
     for name in collection_names:
         cursors[name] = fetch_data_from_mongodb(db, name)
 
     try:
-        while True:  # Vòng lặp vô hạn để liên tục gửi dữ liệu
+        while True:  
             for collection_name in collection_names:
                 try:
                     cursor = cursors[collection_name]
@@ -101,13 +91,12 @@ def main():
                         topic_name = KAFKA_TOPICS[collection_name]
                         send_message_to_kafka(producer, topic_name, message)
                     else:
-                        # Nếu cursor đã hết, tạo lại một cursor mới
                         cursors[collection_name] = fetch_data_from_mongodb(db, collection_name)
                         print(f"Reset cursor for collection {collection_name}")
                 except StopIteration:
                     print(f"Collection {collection_name} has been traversed completely. Resetting.")
                     cursors[collection_name] = fetch_data_from_mongodb(db, collection_name)
-            time.sleep(10)  # Delay 10 giây
+            time.sleep(10)  
 
     except KeyboardInterrupt:
         print("Producer is terminated by the user.")

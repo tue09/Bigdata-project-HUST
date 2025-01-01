@@ -3,14 +3,9 @@ import pymongo
 import pandas as pd
 import plotly.express as px
 
-# ---------------------------
-# CẤU HÌNH
-# ---------------------------
-
 MONGO_URI = "mongodb://localhost:27017"
 MONGO_DB = "processed_data"
 
-# Cấu hình Streamlit
 st.set_page_config(page_title="Social Media Analytics", page_icon="📈", layout="wide")
 
 # Custom CSS
@@ -43,20 +38,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ---------------------------
-# KẾT NỐI MONGODB
-# ---------------------------
-
 @st.cache_resource
 def init_connection():
     return pymongo.MongoClient(MONGO_URI)
 
 client = init_connection()
 db = client[MONGO_DB]
-
-# ---------------------------
-# HÀM LẤY DỮ LIỆU
-# ---------------------------
 
 @st.cache_data(ttl=600)
 def load_data(collection_name):
@@ -68,14 +55,9 @@ def get_kol_details(kol_id):
     kol_details = db["preprocess_twitter_users"].find_one({"_id": kol_id})
     return kol_details
 
-# ---------------------------
-# TRANG QUERY
-# ---------------------------
-
 def query_page():
     st.title("Data Query")
 
-    # Form input
     st.markdown("### Select Collection and Enter Query")
     collection_name = st.selectbox("Select Collection", ["Projects social media", "Tweets", "Twitter users"])
 
@@ -113,13 +95,11 @@ def query_page():
             if user_name:
                 result = db['preprocess_twitter_users'].find_one({"userName": user_name})
                 if result:
-                    # Loại bỏ trường engagementChangeLogs trước khi tạo DataFrame
                     result_without_engagement = {k: v for k, v in result.items() if k != 'engagementChangeLogs'}
                     df_result = pd.DataFrame([result_without_engagement])
                     st.markdown("#### Query Result")
                     st.table(df_result)
 
-                    # Vẽ biểu đồ engagementChangeLogs
                     if 'engagementChangeLogs' in result and result['engagementChangeLogs']:
                         engagement_data = result['engagementChangeLogs']
                         timestamps = sorted(engagement_data.keys(), key=int)
@@ -142,19 +122,13 @@ def query_page():
             else:
                 st.write("Please enter a User Name.")
 
-# ---------------------------
-# TRANG CHÍNH
-# ---------------------------
-
 def main():
-    # Load dataframes
     df_projects_social_media = load_data("preprocess_projects_social_media")
     df_kol_folder = load_data("KOL_folder")
     df_users = load_data("preprocess_twitter_users")
     df_general_users = load_data("general_users")
     df_project_folder = load_data("Project_folder")
 
-    # Sidebar
     st.sidebar.title("Navigation")
     page = st.sidebar.radio("Go to", ["KOL Analysis", "General Analytics", "Query"])
 
